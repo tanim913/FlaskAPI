@@ -247,9 +247,9 @@ def music():
             return jsonify(musics)
 
     if request.method == "POST":
-        new_artist = request.form['artist']
-        new_language = request.form['language']
-        new_title = request.form['title']
+        new_artist = request.json['artist']
+        new_language = request.json['language']
+        new_title = request.json['title']
         sql = """INSERT INTO music (artist, language, title) VALUES (?, ?, ?)"""
 
         cursor = cursor.execute(sql, (new_artist, new_language, new_title))
@@ -280,9 +280,9 @@ def single_music(id):
                     title=?
                 WHERE id=?"""
         
-        artist = request.form['artist']
-        language = request.form['language']
-        title = request.form['title']
+        artist = request.json['artist']
+        language = request.json['language']
+        title = request.json['title']
         updated_music = {
             'id': id,
             'artist': artist,
