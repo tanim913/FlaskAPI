@@ -1,11 +1,11 @@
 import sqlite3
-conn = sqlite3.connect("books.sqlite")
+conn = sqlite3.connect("musics.sqlite")
 
 cursor = conn.cursor()
 
-sql_query = """ CREATE TABLE book (
+sql_query = """ CREATE TABLE music (
     id integer PRIMARY KEY,
-    author text NOT NULL,
+    artist text NOT NULL,
     language text NOT NULL,
     title text NOT NULL
 )"""

@@ -119,7 +119,7 @@
 #         new_title = request.form['title']
 #         sql = """INSERT INTO book (author, language, title) VALUES (?, ?, ?)"""
 
-#         cursor = conn.execute(sql, (new_author, new_lang, new_title))
+#         cursor = cursor.execute(sql, (new_author, new_lang, new_title))
 #         conn.commit()
 #         return f"Book with the id: {cursor.lastrowid} created successfully", 201
 
@@ -150,70 +150,154 @@
 #                 books_list.pop(index)
 #                 return jsonify(books_list)
 
-#
+# without db run time -----------------------------------------------------------------------------------------------
+# from flask import Flask, request, jsonify
+# app = Flask(__name__)
+
+# music_list = [
+#     {
+#         "id": 0,
+#         "artist": "Isac Gracie",
+#         "language": "English",
+#         "title": "Solhouttes of you"
+#     }
+# ]
+
+
+# @app.route('/musics', methods=['GET', 'POST'])
+# def musics():
+#     if request.method == 'GET':
+#         if len(music_list) > 0:
+#             return jsonify(music_list)
+#         else:
+#             'Nothing Found', 404
+#     if request.method == 'POST':
+#         new_artist = request.form['artist']
+#         new_language = request.form['language']
+#         new_title = request.form['title']
+#         iD = music_list[-1]['id']+1
+#         new_music = {
+#             "id": iD,
+#             "artist": new_artist,
+#             "language": new_language,
+#             "title": new_title
+#         }
+#         music_list.append(new_music)
+#         return jsonify(music_list), 201
+
+
+# @app.route('/music/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+# def single_music(id):
+#     if request.method == 'GET':
+#         for music in music_list:
+#             if music['id'] == id:
+#                 return jsonify(music)
+#             pass
+
+#     if request.method == 'PUT':
+#         for music in music_list:
+#             if music['id'] == id:
+#                 music['artist'] = request.form['artist']
+#                 music['language'] = request.form['language']
+#                 music['title'] = request.form['title']
+#                 updated_music = {
+#                     'id': id,
+#                     'artist': music['artist'],
+#                     'language': music['language'],
+#                     'title': music['title']
+#                 }
+#                 return jsonify(updated_music)
+
+#     if request.method == 'DELETE':
+#         for index, music in enumerate(music_list):
+#             if music['id'] == id:
+#                 music_list.pop(index)
+#                 return jsonify(music_list)
+
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
+# ---------------------------------------------------------------------------------------------------------
+
+
 from flask import Flask, request, jsonify
+import sqlite3
 app = Flask(__name__)
 
-music_list = [
-    {
-        "id": 0,
-        "artist": "Isac Gracie",
-        "language": "English",
-        "title": "Solhouttes of you"
-    }
-]
+
+def db_connection():
+    conn = None
+    try:
+        conn = sqlite3.connect("musics.sqlite")
+    except sqlite3.error as e:
+        print(e)
+    return conn
 
 
-@app.route('/musics', methods=['GET', 'POST'])
-def musics():
-    if request.method == 'GET':
-        if len(music_list) > 0:
-            return jsonify(music_list)
-        else:
-            'Nothing Found', 404
-    if request.method == 'POST':
+@app.route('/musics', methods=["GET", "POST"])
+def music():
+    conn = db_connection()
+    cursor = conn.cursor()
+
+    if request.method == "GET":
+        cursor = conn.execute("SELECT * FROM music")
+    musics = [dict(id=row[0], artist=row[1], language=row[2],
+                   title=row[3]) for row in cursor.fetchall()]
+    if musics is not None:
+        return jsonify(musics)
+
+    if request.method == "POST":
         new_artist = request.form['artist']
         new_language = request.form['language']
         new_title = request.form['title']
-        iD = music_list[-1]['id']+1
-        new_music = {
-            "id": iD,
-            "artist": new_artist,
-            "language": new_language,
-            "title": new_title
-        }
-        music_list.append(new_music)
-        return jsonify(music_list), 201
+        sql = """INSERT INTO music (artist, language, title) VALUES (?, ?, ?)"""
+
+        cursor = cursor.execute(sql, (new_artist, new_language, new_title))
+        conn.commit()
+        message = "Music with the id: " + str(cursor.lastrowid) + "created successfully"
+        return jsonify(message), 201
 
 
-@app.route('/music/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/music/<int:id>', methods=["GET", "PUT", "DELETE"])
 def single_music(id):
-    if request.method == 'GET':
-        for music in music_list:
-            if music['id'] == id:
-                return jsonify(music)
-            pass
+    conn = db_connection()
+    cursor = conn.cursor()
+    music = None
+    if request.method == "GET":
+        cursor.execute("SELECT * FROM music WHERE id=?", (id,))
+        rows = cursor.fetchall()
+        for r in rows:
+            music = r
+        if music is not None:
+            return jsonify(music), 200
+        else:
+            return "Something Wrong", 404
 
-    if request.method == 'PUT':
-        for music in music_list:
-            if music['id'] == id:
-                music['artist'] = request.form['artist']
-                music['language'] = request.form['language']
-                music['title'] = request.form['title']
-                updated_music = {
-                    'id': id,
-                    'artist': music['artist'],
-                    'language': music['language'],
-                    'title': music['title']
-                }
-                return jsonify(updated_music)
-            
-    if request.method == 'DELETE':
-        for index, music in enumerate(music_list):
-            if music['id'] == id:
-                music_list.pop(index)
-                return jsonify(music_list)
+    if request.method == "PUT":
+        sql = """UPDATE music 
+                SET artist=?,
+                    language=?,
+                    title=?
+                WHERE id=?"""
+        
+        artist = request.form['artist']
+        language = request.form['language']
+        title = request.form['title']
+        updated_music = {
+            'id': id,
+            'artist': artist,
+            'language': language,
+            'title': title
+        }
+        conn.execute(sql, (artist, language, title, id))
+        conn.commit()
+        return jsonify(updated_music)
 
+    if request.method == "DELETE":
+        sql = """ DELETE FROM music WHERE id=?"""
+        conn.execute(sql, (id,))
+        conn.commit()
+        return "The music with id: {} has been deleted.".format(id),200
 
 if __name__ == '__main__':
     app.run(debug=True)
