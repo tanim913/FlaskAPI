@@ -241,10 +241,10 @@ def music():
 
     if request.method == "GET":
         cursor = conn.execute("SELECT * FROM music")
-    musics = [dict(id=row[0], artist=row[1], language=row[2],
-                   title=row[3]) for row in cursor.fetchall()]
-    if musics is not None:
-        return jsonify(musics)
+        musics = [dict(id=row[0], artist=row[1], language=row[2],
+                    title=row[3]) for row in cursor.fetchall()]
+        if musics is not None:
+            return jsonify(musics)
 
     if request.method == "POST":
         new_artist = request.form['artist']
@@ -254,7 +254,7 @@ def music():
 
         cursor = cursor.execute(sql, (new_artist, new_language, new_title))
         conn.commit()
-        message = "Music with the id: " + str(cursor.lastrowid) + "created successfully"
+        message = "Music with the id: " + str(cursor.lastrowid) + " created successfully"
         return jsonify(message), 201
 
 
