@@ -242,20 +242,24 @@ def music():
     if request.method == "GET":
         cursor = conn.execute("SELECT * FROM music")
         musics = [dict(id=row[0], artist=row[1], language=row[2],
-                    title=row[3]) for row in cursor.fetchall()]
+                    title=row[3],test_num=row[4]) for row in cursor.fetchall()]
         if musics is not None:
             return jsonify(musics)
 
     if request.method == "POST":
-        new_artist = request.json['artist']
-        new_language = request.json['language']
-        new_title = request.json['title']
-        sql = """INSERT INTO music (artist, language, title) VALUES (?, ?, ?)"""
+        try:
+            new_artist = request.json['artist']
+            new_language = request.json['language']
+            new_title = request.json['title']
+            new_test_num = int(request.json['test_num'])
+            sql = """INSERT INTO music (artist, language, title, test_num) VALUES (?, ?, ?, ?)"""
 
-        cursor = cursor.execute(sql, (new_artist, new_language, new_title))
-        conn.commit()
-        message = "Music with the id: " + str(cursor.lastrowid) + " created successfully"
-        return jsonify(message), 201
+            cursor = cursor.execute(sql, (new_artist, new_language, new_title, new_test_num))
+            conn.commit()
+            message = "Music with the id: " + str(cursor.lastrowid) + " created successfully"
+            return jsonify(message), 201
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'Invalid input. Please enter an integer for the "test_num" field.'}), 400
 
 
 @app.route('/music/<int:id>', methods=["GET", "PUT", "DELETE"])
@@ -274,24 +278,30 @@ def single_music(id):
             return "Something Wrong", 404
 
     if request.method == "PUT":
-        sql = """UPDATE music 
-                SET artist=?,
-                    language=?,
-                    title=?
-                WHERE id=?"""
-        
-        artist = request.json['artist']
-        language = request.json['language']
-        title = request.json['title']
-        updated_music = {
-            'id': id,
-            'artist': artist,
-            'language': language,
-            'title': title
-        }
-        conn.execute(sql, (artist, language, title, id))
-        conn.commit()
-        return jsonify(updated_music)
+        try:
+            sql = """UPDATE music 
+                    SET artist=?,
+                        language=?,
+                        title=?,
+                        test_num=?
+                    WHERE id=?"""
+            
+            artist = request.json['artist']
+            language = request.json['language']
+            title = request.json['title']
+            test_num = int(request.json['test_num'])
+            updated_music = {
+                'id': id,
+                'artist': artist,
+                'language': language,
+                'title': title,
+                'test_num': test_num,
+            }
+            conn.execute(sql, (artist, language, title, test_num,id))
+            conn.commit()
+            return jsonify(updated_music)
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'Invalid input. Please enter an integer for the "test_num" field.'}), 400
 
     if request.method == "DELETE":
         sql = """ DELETE FROM music WHERE id=?"""
